@@ -91,60 +91,79 @@
     var customFilters = {};
 
     var methods = {
-        init: function (options) {
-            //default settings
-            var settings = $.extend({
-                success: "", //success callback
-                fail: "", //fail callback
-                validate: "", //custom validate function
-                parentElement: "", //parent element to attach error class too
-                tooltips: true, //have helpful tooltips popup
-                tooltipPosition: "right", //position tooltips (right, bottom)
-                errorClass: "input-validation-error",
-                filter: "", //any valid selector (only validate elements within the filter)
-                form: "", //any valid selector,
-                extend: undefined,
-                submitOnSuccess: false
-            }, options);
 
-            var form,
-                filter,
-                $this = this;
+        addFilters: function () {
+            var settings = this.data("settings"),
+                $form = this.data("form"),
+                $filter = this.data("filter"),
+                inputs = {};
 
-            if (settings.form.length > 0)
-                form = $this.find(settings.form);
-            else
-                form = $this;
+            //find fields in form, store them in inputs object
+            $filter.find("input[type='text'], input[type='url'], input[type='email'], input[type='number'], input[type='tel'], input[type='password'], textarea, select").each(function () {
+                var $element = $(this);
+                var field = {}; //store field values
+                field.filters = {};
+                field.disabled = false;
+                var filtersString = $element.attr("data-filters"); //store filters
 
-            //form cannot be found, stop execution
-            if (form.length === 0)
-                return;
-            //make sure to stop default browser validation
-            form.attr("novalidate", "");
+                if (settings.tooltips)
+                    $element.parent().css({ position: "relative" });
+                //insert tooltips if wanted
+                if (settings.tooltips && $element.parent().find(".form-error").length === 0) {
+                    //if there are multiple inputs, only insert one tooltip
+                    if ($element.parent().find("input, select, textarea").length > 1)
+                        $element.parent().append($(errorDiv).addClass(settings.tooltipPosition));
+                    else
+                        $(errorDiv).insertAfter($element).addClass(settings.tooltipPosition);
+                }
 
-            //extend the filtering
-            if (typeof settings.extend !== "undefined")
-                methods.extend(settings.extend);
+                field.element = $element;
+                field.customFilters = [];
+                //check type of input
+                if ($element.attr("type") !== undefined)
+                    field.type = $element.attr("type");
+                else if ($element.is("select"))
+                    field.type = "select";
+                else if ($element.is("checkbox"))
+                    field.type = "checkbox";
+                //check to see if field is required
+                if ($element.attr("required") !== undefined)
+                    field.required = true;
+                //check to see if filtering of field is required
+                if (filtersString) {
+                    var tempFilters = filtersString.split(",");
+                    for (var i = 0; i < tempFilters.length; i++) {
+                        //if in array, override type
+                        if (jQuery.inArray(tempFilters[i], typeOverride) !== -1)
+                            field.type = tempFilters[i];
+                        else { //parse filter
+                            if (tempFilters[i].indexOf("{") !== -1) {
+                                //parse filter arguments
+                                var filt = tempFilters[i].substr(0, tempFilters[i].indexOf("{")); //store string
+                                var pos = tempFilters[i].indexOf("{") + 1;
+                                var str = tempFilters[i].slice(pos, -1);
+                                //used for default filters
+                                field[filt] = str;
+                            }
+                            else
+                                field[filters[i]] = true;
 
-            //store settings
-            $this.data("settings", settings);
-            //store form
-            $this.data("form", form);
+                            if (typeof filters[tempFilters[i]] === "undefined") {
+                                //custom filter array
+                                field.customFilters.push(tempFilters[i]);
+                            }
+                        }
+                    }
+                }
+                //insert field into array
+                inputs[methods.cleanseName($element.attr("name"))] = field;
+            });
 
-            //filter down inputs
-            if (settings.filter)
-                filter = $this.find(settings.filter);
-            else
-                filter = form;
-
-            //store filter
-            $this.data("filter", filter);
-
-            methods.addFilters.apply(this);
-            methods.validate.apply(this);
+            //store inputs
+            this.data("inputs", inputs);
         },
 
-        validate: function() {
+        validate: function () {
             var settings = this.data("settings"),
                 $form = this.data("form"),
                 $filter = this.data("filter"),
@@ -157,6 +176,7 @@
                 var errorDetail = [];
                 //loop through inputs and validate them
                 for (var key in inputs) {
+                    console.log(inputs[key]);
                     //skip disabled field
                     if (!inputs[key].disabled && !inputs[key].element.is(":disabled")) {
                         var validated = true, errorStart = errornumber; //keep track if input is valid, keep track if error class needs to be added
@@ -335,77 +355,6 @@
             });
         },
 
-        addFilters: function () {
-            var settings = this.data("settings"),
-                $form = this.data("form"),
-                $filter = this.data("filter"),
-                inputs = {};
-
-            //find fields in form, store them in inputs object
-            $filter.find("input[type='text'], input[type='url'], input[type='email'], input[type='number'], input[type='tel'], input[type='password'], textarea, select").each(function () {
-                var $element = $(this);
-                var field = {}; //store field values
-                field.filters = {};
-                field.disabled = false;
-                var filtersString = $element.attr("data-filters"); //store filters
-
-                if (settings.tooltips)
-                    $element.parent().css({ position: "relative" });
-                //insert tooltips if wanted
-                if (settings.tooltips && $element.parent().find(".form-error").length === 0) {
-                    //if there are multiple inputs, only insert one tooltip
-                    if ($element.parent().find("input, select, textarea").length > 1)
-                        $element.parent().append($(errorDiv).addClass(settings.tooltipPosition));
-                    else
-                        $(errorDiv).insertAfter($element).addClass(settings.tooltipPosition);
-                }
-
-                field.element = $element;
-                field.customFilters = [];
-                //check type of input
-                if ($element.attr("type") !== undefined)
-                    field.type = $element.attr("type");
-                else if ($element.is("select"))
-                    field.type = "select";
-                else if ($element.is("checkbox"))
-                    field.type = "checkbox";
-                //check to see if field is required
-                if ($element.attr("required") !== undefined)
-                    field.required = true;
-                //check to see if filtering of field is required
-                if (filtersString) {
-                    var tempFilters = filtersString.split(",");
-                    for (var i = 0; i < tempFilters.length; i++) {
-                        //if in array, override type
-                        if (jQuery.inArray(tempFilters[i], typeOverride) !== -1)
-                            field.type = tempFilters[i];
-                        else { //parse filter
-                            if (tempFilters[i].indexOf("{") !== -1) {
-                                //parse filter arguments
-                                var filt = tempFilters[i].substr(0, tempFilters[i].indexOf("{")); //store string
-                                var pos = tempFilters[i].indexOf("{") + 1;
-                                var str = tempFilters[i].slice(pos, -1);
-                                //used for default filters
-                                field[filt] = str;
-                            }
-                            else
-                                field[filters[i]] = true;
-
-                            if (typeof filters[tempFilters[i]] === "undefined") {
-                                //custom filter array
-                                field.customFilters.push(tempFilters[i]);
-                            }
-                        }
-                    }
-                }
-                //insert field into array
-                inputs[methods.cleanseName($element.attr("name"))] = field;
-            });
-
-            //store inputs
-            $form.data("inputs", inputs);
-        },
-
         //extend the filters
         extend: function (newFilter) {
             customFilters = $.extend(customFilters, newFilter);
@@ -456,6 +405,60 @@
             }
 
             return false;
+        },
+
+        init: function (options) {
+            //default settings
+            var settings = $.extend({
+                success: "", //success callback
+                fail: "", //fail callback
+                validate: "", //custom validate function
+                parentElement: "", //parent element to attach error class too
+                tooltips: true, //have helpful tooltips popup
+                tooltipPosition: "right", //position tooltips (right, bottom)
+                errorClass: "input-validation-error",
+                filter: "", //any valid selector (only validate elements within the filter)
+                form: "", //any valid selector,
+                extend: undefined,
+                submitOnSuccess: false
+            }, options);
+
+            var form,
+                filter,
+                $this = this;
+
+            if (settings.form.length > 0)
+                form = $this.find(settings.form);
+            else
+                form = $this;
+
+            //form cannot be found, stop execution
+            if (form.length === 0)
+                return;
+
+            //make sure to stop default browser validation
+            form.attr("novalidate", "");
+
+            //extend the filtering
+            if (typeof settings.extend !== "undefined")
+                methods.extend(settings.extend);
+
+            //store settings
+            $this.data("settings", settings);
+            //store form
+            $this.data("form", form);
+
+            //filter down inputs
+            if (settings.filter)
+                filter = $this.find(settings.filter);
+            else
+                filter = form;
+
+            //store filter
+            $this.data("filter", filter);
+
+            methods.addFilters.apply(this);
+            methods.validate.apply(this);
         }
     };
 

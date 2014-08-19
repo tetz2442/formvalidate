@@ -22,7 +22,7 @@
             error: "Must be at least 6 characters long, and contain at least one number, one uppercase and one lowercase letter."
         },
         'number': {
-            regex: /^\d*[1-9]\d*$/,
+            regex: /^\d*[0-9]\d*$/,
             error: "Only numbers allowed. No Spaces."
         },
         'letters': {
@@ -32,6 +32,12 @@
         'email': {
             regex: /[^@]+@[^@]/,
             error: "Please enter a valid email (Ex. user@gmail.com)."
+        },
+        'radio': {
+            regex: function (groupName) {
+                return $('input[name="' + groupName + '"]:checked').length > 0;
+            },
+            error: "You must select an option."
         },
         'tel': {
             regex: /^\(?(\d{3})\)?[- ]?(\d{3})[- ]?(\d{4})$/, //accepted formats (714)3455967, 7152349456, 712-345-3456
@@ -44,6 +50,18 @@
         'url': {
             regex: /^(?:(ftp|http|https):\/\/)?(?:[\w\-]+\.)+[a-z]{2,6}([\:\/?#].*)?$/i,
             error: "Please enter a valid URL."
+        },
+        'min': {
+            regex: function (val, min) {
+                return val >= min;
+            },
+            error: "Must be greater than or equal to {0}."
+        },
+        'max': {
+            regex: function (val, max) {
+                return val <= max;
+            },
+            error: "Must be less than or equal to {0}."
         },
         "match": {
             regex: function (val, id) {
@@ -92,6 +110,60 @@
 
     var methods = {
 
+        init: function (options) {
+            //default settings
+            var settings = $.extend({
+                success: "", //success callback
+                fail: "", //fail callback
+                validate: "", //custom validate function
+                parentElement: "", //parent element to attach error class too
+                tooltips: true, //have helpful tooltips popup
+                tooltipPosition: "right", //position tooltips (right, bottom)
+                errorClass: "input-validation-error",
+                filter: "", //any valid selector (only validate elements within the filter)
+                form: "", //any valid selector,
+                extend: undefined,
+                submitOnSuccess: false
+            }, options);
+
+            var form,
+                filter,
+                $this = this;
+
+            if (settings.form.length > 0)
+                form = $this.find(settings.form);
+            else
+                form = $this;
+
+            //form cannot be found, stop execution
+            if (form.length === 0)
+                return;
+
+            //make sure to stop default browser validation
+            form.attr("novalidate", "novalidate");
+
+            //extend the filtering
+            if (typeof settings.extend !== "undefined")
+                methods.extend(settings.extend);
+
+            //store settings
+            $this.data("settings", settings);
+            //store form
+            $this.data("form", form);
+
+            //filter down inputs
+            if (settings.filter)
+                filter = $this.find(settings.filter);
+            else
+                filter = form;
+
+            //store filter
+            $this.data("filter", filter);
+
+            methods.addFilters.apply(this);
+            methods.validate.apply(this);
+        },
+
         addFilters: function () {
             var settings = this.data("settings"),
                 $form = this.data("form"),
@@ -99,7 +171,7 @@
                 inputs = {};
 
             //find fields in form, store them in inputs object
-            $filter.find("input[type='text'], input[type='url'], input[type='email'], input[type='number'], input[type='tel'], input[type='password'], textarea, select").each(function () {
+            $filter.find("input:not([type='hidden']), textarea, select").each(function () {
                 var $element = $(this);
                 var field = {}; //store field values
                 field.filters = {};
@@ -120,15 +192,26 @@
                 field.element = $element;
                 field.customFilters = [];
                 //check type of input
-                if ($element.attr("type") !== undefined)
-                    field.type = $element.attr("type");
-                else if ($element.is("select"))
+                if ($element.is("select"))
                     field.type = "select";
                 else if ($element.is("checkbox"))
                     field.type = "checkbox";
+                else if ($element.is(":radio")) {
+                    field.type = "radio";
+                    field.groupName = $element.attr("name");
+                }
+                else if ($element.attr("type"))
+                    field.type = $element.attr("type");
+
                 //check to see if field is required
                 if ($element.attr("required") !== undefined)
                     field.required = true;
+                //check if min and max are set
+                if ($element.attr("max") !== undefined)
+                    field.max = parseInt($element.attr("max"), 10);
+                if ($element.attr("min") !== undefined)
+                    field.min = parseInt($element.attr("min"), 10);
+
                 //check to see if filtering of field is required
                 if (filtersString) {
                     var tempFilters = filtersString.split(",");
@@ -164,7 +247,8 @@
         },
 
         validate: function () {
-            var settings = this.data("settings"),
+            var formvalidate = this,
+                settings = this.data("settings"),
                 $form = this.data("form"),
                 $filter = this.data("filter"),
                 inputs = this.data("inputs");
@@ -176,15 +260,15 @@
                 var errorDetail = [];
                 //loop through inputs and validate them
                 for (var key in inputs) {
-                    console.log(inputs[key]);
+                    //console.log(inputs[key]);
                     //skip disabled field
                     if (!inputs[key].disabled && !inputs[key].element.is(":disabled")) {
                         var validated = true, errorStart = errornumber; //keep track if input is valid, keep track if error class needs to be added
-                        var val = inputs[key].element.val(); //store value
+                        var val = inputs[key].element.val().trim(); //store value
                         var len = val.length; //store field length
 
                         //if field is required check its val
-                        if (inputs[key].required) {
+                        if (inputs[key].required && inputs[key].type !== "radio") {
                             //check for any value
                             if (!filters["required"].regex.test(val)) {
                                 //change the tooltip text to the correct error
@@ -197,11 +281,19 @@
                         //if field has a specific type, validate it
                         if (inputs[key].type !== "text") {
                             if (inputs[key].type === "checkbox") { }
-                            else if (inputs[key].type === "radio") { }
+                                // only validate radios if they are required
+                            else if (inputs[key].type === "radio") {
+                                if (inputs[key].required && !filters[inputs[key].type].regex(inputs[key].groupName)) {
+                                    if (settings.tooltips)
+                                        methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters[inputs[key].type].error]);
+                                    validated = false;
+                                    errornumber++;
+                                }
+                            }
                                 //other field type
-                            else {
+                            else if (inputs[key].type !== "select") {
                                 //validate custom type, ignore selects
-                                if (len > 0 && inputs[key].type !== "select" && !filters[inputs[key].type].regex.test(val)) {
+                                if (len > 0 && !filters[inputs[key].type].regex.test(val)) {
                                     if (settings.tooltips)
                                         methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters[inputs[key].type].error]);
                                     validated = false;
@@ -246,6 +338,26 @@
                             }
                         }
 
+                        //check for max
+                        if (typeof inputs[key].max !== "undefined" && len > 0) {
+                            if (!filters["max"].regex(parseFloat(val), inputs[key].max)) { //call function in match filter
+                                if (settings.tooltips)
+                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["max"].error]);
+                                validated = false;
+                                errornumber++;
+                            }
+                        }
+
+                        //check for min
+                        if (typeof inputs[key].min !== "undefined" && len > 0) {
+                            if (!filters["min"].regex(parseFloat(val), inputs[key].min)) { //call function in match filter
+                                if (settings.tooltips)
+                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["max"].error]);
+                                validated = false;
+                                errornumber++;
+                            }
+                        }
+
                         //Go through custom filters
                         if (inputs[key].customFilters.length > 0) {
                             for (var x = 0; x < inputs[key].customFilters.length; x++) {
@@ -263,68 +375,39 @@
 
                         //if field is not validated, add listeners to remove error fields and show tooltips
                         if (!validated) {
-                            //just add click events to checkboxes, radio buttons, and selects
-                            if (inputs[key].type === "checkbox" ||
-                                inputs[key].type === "radio" ||
-                                inputs[key].type === "select") {
-                                //console.log(inputs[key]);
-                                inputs[key].element.on("click.formvalidate change.formvalidate", function () {
-                                    var $this = $(this);
-                                    $this.parents(settings.parentElement).removeClass(settings.errorClass);
-                                    $this.removeClass(settings.errorClass);
+                            methods.errorListener.apply(formvalidate, [inputs[key]]);
 
-                                    if (settings.tooltips)
-                                        $this.parent().find(".field-validation-error").hide();
-
-                                    $this.off(".formvalidate");
-                                });
-
-                            }
-                                //add keydown listeners to other inputs
-                            else {
-                                inputs[key].element.on("keydown.formvalidate change.formvalidate", function (event) {
-                                    if (event.keyCode !== 9 && event.keyCode !== 32) { //dont unvalidate if tab or space key is pressed
-                                        var $this = $(this);
-                                        $this.parents(settings.parentElement).removeClass(settings.errorClass);
-                                        $this.removeClass(settings.errorClass);
-
-                                        if (settings.tooltips)
-                                            $this.parent().find(".field-validation-error").hide();
-
-                                        $this.off(".formvalidate");
-                                    }
-                                });
-
-                                if (settings.tooltips) {
-                                    inputs[key].element.on("focus.formvalidate", function () {
-                                        $(this).parent().find(".field-validation-error").show();
-                                    }).on("focusout.formvalidate", function () {
-                                        $(this).parent().find(".field-validation-error").hide();
-                                    });
-                                }
-                            }
                             //if they have specified a parent, add the error class to it
                             if (settings.parentElement)
                                 inputs[key].element.parents(settings.parentElement).addClass(settings.errorClass);
 
-                            inputs[key].element.addClass(settings.errorClass);
-
-                            inputs[key].element.attr("data-valid", "false");
+                            //console.log(inputs[key].type, inputs[key].groupName)
+                            if (inputs[key].type !== "radio") {
+                                inputs[key].element.addClass(settings.errorClass).attr("data-valid", "false");
+                            }
+                            else {
+                                $('input[name="' + inputs[key].groupName + '"]').addClass(settings.errorClass).attr("data-valid", "false");
+                            }
                         }
                             //remove error class
                         else {
-                            inputs[key].element.attr("data-valid", "true");
-
                             var removeError = 0;
-                            inputs[key].element.parent().find("input").each(function () {
-                                if ($(this).attr("data-valid") === "false")
-                                    removeError++;
-                            });
+                            if (inputs[key] !== "radio") {
+                                inputs[key].element.attr("data-valid", "true");
+
+                                inputs[key].element.parent().find("input:not([type='hidden']), textarea, select").each(function () {
+                                    if ($(this).attr("data-valid") === "false")
+                                        removeError++;
+                                });
+
+                                inputs[key].element.removeClass(settings.errorClass);
+                            }
+                            else {
+                                $('input[name="' + inputs[key].groupName + '"]').removeClass(settings.errorClass).attr("data-valid", "true");
+                            }
 
                             if (settings.parentElement && removeError === 0)
                                 inputs[key].element.parents(settings.parentElement).removeClass(settings.errorClass);
-
-                            inputs[key].element.removeClass(settings.errorClass);
                         }
                     }
                 }
@@ -353,6 +436,80 @@
                     //return false;
                 }
             });
+        },
+
+        errorListener: function (field) {
+            var settings = this.data("settings");
+
+            //just add click events to checkboxes, radio buttons, and selects
+            if (field.type === "checkbox" ||
+                field.type === "radio" ||
+                field.type === "select") {
+                //console.log(field);
+                var $selector = field.element;
+                if (field.groupName)
+                    $selector = $('input[name="' + field.groupName + '"]');
+
+                //remove all listeners
+                $selector.off(".formvalidate");
+
+                $selector.on("click.formvalidate change.formvalidate", function () {
+                    field.element.parents(settings.parentElement).removeClass(settings.errorClass);
+                    $selector.removeClass(settings.errorClass);
+
+                    if (settings.tooltips)
+                        field.element.parent().find(".field-validation-error").hide();
+
+                    $selector.off(".formvalidate");
+                });
+
+            }
+                //add keydown listeners to other inputs
+            else {
+                //remove all listeners
+                field.element.off(".formvalidate");
+
+                field.element.on("keydown.formvalidate change.formvalidate", function (event) {
+                    if (event.keyCode !== 9 && event.keyCode !== 32) { //dont unvalidate if tab or space key is pressed
+                        var $this = $(this);
+                        $this.parents(settings.parentElement).removeClass(settings.errorClass);
+                        $this.removeClass(settings.errorClass);
+
+                        if (settings.tooltips)
+                            $this.parent().find(".field-validation-error").hide();
+
+                        $this.off(".formvalidate");
+                    }
+                });
+
+                if (settings.tooltips) {
+                    field.element.on("focus.formvalidate", function () {
+                        $(this).parent().find(".field-validation-error").show();
+                    }).on("focusout.formvalidate", function () {
+                        $(this).parent().find(".field-validation-error").hide();
+                    });
+                }
+            }
+        },
+
+        // update form input fields
+        update: function () {
+            var $form = this.data("form"),
+                inputs = this.data("inputs"),
+                settings = this.data("settings");
+
+            for (var key in inputs) {
+                if (inputs[key] !== "radio")
+                    inputs[key].element.removeAttr("data-valid").removeClass(settings.errorClass);
+                else
+                    $('input[name="' + inputs[key].groupName + '"]').removeClass(settings.errorClass).removeAttr("data-valid");
+
+                if (settings.parentElement)
+                    inputs[key].element.parents(settings.parentElement).removeClass(settings.errorClass);
+            }
+
+            this.removeData("inputs");
+            methods.addFilters.apply(this);
         },
 
         //extend the filters
@@ -396,8 +553,8 @@
         destroy: function () {
             var $form = this.data("form");
             //console.log("form");
-            if (typeof $form !== "undefined") {
-                $form.off("submit.formvalidate");
+            if ($form) {
+                $form.off(".formvalidate");
                 $form.find(".form-error").remove();
                 //remove stored data
                 this.removeData("inputs").removeData("form").removeData("filter").removeData("settings");
@@ -405,61 +562,8 @@
             }
 
             return false;
-        },
-
-        init: function (options) {
-            //default settings
-            var settings = $.extend({
-                success: "", //success callback
-                fail: "", //fail callback
-                validate: "", //custom validate function
-                parentElement: "", //parent element to attach error class too
-                tooltips: true, //have helpful tooltips popup
-                tooltipPosition: "right", //position tooltips (right, bottom)
-                errorClass: "input-validation-error",
-                filter: "", //any valid selector (only validate elements within the filter)
-                form: "", //any valid selector,
-                extend: undefined,
-                submitOnSuccess: false
-            }, options);
-
-            var form,
-                filter,
-                $this = this;
-
-            if (settings.form.length > 0)
-                form = $this.find(settings.form);
-            else
-                form = $this;
-
-            //form cannot be found, stop execution
-            if (form.length === 0)
-                return;
-
-            //make sure to stop default browser validation
-            form.attr("novalidate", "");
-
-            //extend the filtering
-            if (typeof settings.extend !== "undefined")
-                methods.extend(settings.extend);
-
-            //store settings
-            $this.data("settings", settings);
-            //store form
-            $this.data("form", form);
-
-            //filter down inputs
-            if (settings.filter)
-                filter = $this.find(settings.filter);
-            else
-                filter = form;
-
-            //store filter
-            $this.data("filter", filter);
-
-            methods.addFilters.apply(this);
-            methods.validate.apply(this);
         }
+
     };
 
     $.fn.formvalidate = function (method) {

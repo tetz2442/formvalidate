@@ -6,7 +6,7 @@
     var animationTime = 350;
     //var inputs = {}; //stores inputs in associative array
     var typeOverride = new Array("zip", "letters", "number"); //used to override input type if needed for filtering
-    var errorDiv = "<span class='field-validation-error'></span>"; //tooltip html
+    var errorDiv = "<span></span>"; //tooltip html
 
     /*
      * REGEX expressions from https://github.com/elclanrs/jq-idealforms
@@ -64,8 +64,10 @@
             error: "Must be less than or equal to {0}."
         },
         "match": {
-            regex: function (val, id) {
-                if (val === $(id).val())
+            regex: function (val, selector) {
+                var $match = $(selector);
+
+                if ($match.length && val === $(selector).val().trim())
                     return true;
                 else
                     return false;
@@ -120,6 +122,7 @@
                 tooltips: true, //have helpful tooltips popup
                 //tooltipPosition: "right", //position tooltips (right, bottom)
                 errorClass: "input-validation-error",
+                tooltipErrorClass: "field-validation-error",
                 filter: "", //any valid selector (only validate elements within the filter)
                 form: "", //any valid selector,
                 extend: undefined,
@@ -171,26 +174,26 @@
                 inputs = {};
 
             //find fields in form, store them in inputs object
-            $filter.find("input:not([type='hidden']), textarea, select").each(function () {
+            $filter.find("input:not([type='hidden'], [type='submit']), textarea, select").each(function () {
                 var $element = $(this);
                 var field = {}; //store field values
-                field.filters = {};
+                field.element = $element;
+                field.filters = [];
+                //field.filters = {};
                 field.disabled = false;
                 var filtersString = $element.attr("data-filters"); //store filters
 
-                if (settings.tooltips)
-                    $element.parent().css({ position: "relative" });
+                //if (settings.tooltips)
+                //    $element.parent().css({ position: "relative" });
                 //insert tooltips if wanted
-                if (settings.tooltips && $element.parent().find(".form-error").length === 0) {
+                if (settings.tooltips) {
                     //if there are multiple inputs, only insert one tooltip
-                    if ($element.parent().find("input, select, textarea").length > 1)
-                        $element.parent().append($(errorDiv).addClass(settings.tooltipPosition));
-                    else
-                        $(errorDiv).insertAfter($element).addClass(settings.tooltipPosition);
+                    //if ($element.parent().find("input, select, textarea").length > 1)
+                    //    $element.parent().append($(errorDiv).addClass(settings.tooltipErrorClass));
+                    //else
+                        $(errorDiv).insertAfter($element).addClass(settings.tooltipErrorClass);
                 }
 
-                field.element = $element;
-                field.filters = [];
                 //check type of input
                 if ($element.is("select"))
                     field.type = "select";
@@ -214,83 +217,72 @@
 
                 //check to see if field is required
                 if ($element.attr("required") !== undefined) {
-                    field.required = true;
-
                     field.filters.push({
                         key: "required"
                     });
                 }
                 //check if min and max are set
                 if ($element.attr("max") !== undefined) {
-                    field.max = parseInt($element.attr("max"), 10);
+                    var max = parseInt($element.attr("max"), 10);
+
                     field.filters.push({
                         key: "max",
-                        args: parseInt($element.attr("max"), 10)
+                        args: max,
+                        replace: max
                     });
                 }
                 if ($element.attr("min") !== undefined) {
-                    field.min = parseInt($element.attr("min"), 10);
+                    var min = parseInt($element.attr("min"), 10);
+
                     field.filters.push({
                         key: "min",
-                        args: parseInt($element.attr("min"), 10)
+                        args: min,
+                        replace: min
                     });
                 }
 
                 //check to see if filtering of field is required
                 if (filtersString) {
-                    /*var tempFilters = filtersString.split(",");
-                    for (var i = 0; i < tempFilters.length; i++) {
-                        //if in array, override type
-                        if (jQuery.inArray(tempFilters[i], typeOverride) !== -1)
-                            field.type = tempFilters[i];
-                        else { //parse filter
-                            if (tempFilters[i].indexOf("{") !== -1) {
-                                //parse filter arguments
-                                var filt = tempFilters[i].substr(0, tempFilters[i].indexOf("{")); //store string
-                                var pos = tempFilters[i].indexOf("{") + 1;
-                                var str = tempFilters[i].slice(pos, -1);
-                                //used for default filters
-                                field[filt] = str;
-                            }
-                            else
-                                field[filters[i]] = true;
-
-                            if (typeof filters[tempFilters[i]] === "undefined") {
-                                //custom filter array
-                                field.customFilters.push(tempFilters[i]);
-                            }
-                        }
-                    }*/
                     var tempFilters = filtersString.split(",");
                     for (var i = 0; i < tempFilters.length; i++) {
                         //if in array, override type
                         if (jQuery.inArray(tempFilters[i], typeOverride) !== -1) {
+                            //TODO: remove inserted type from above
                             field.type = tempFilters[i];
                             field.filters.push({
                                 key: tempFilters[i]
                             });
                         }
-                        else { //parse filter
+                        //parse filter
+                        else {
                             if (tempFilters[i].indexOf("{") !== -1) {
                                 //parse filter arguments
-                                var filt = tempFilters[i].substr(0, tempFilters[i].indexOf("{")); //store string
-                                var pos = tempFilters[i].indexOf("{") + 1;
-                                var str = tempFilters[i].slice(pos, -1);
-                                //used for default filters
-                                field[filt] = str;
+                                var filt = tempFilters[i].substr(0, tempFilters[i].indexOf("{")),
+                                    pos = tempFilters[i].indexOf("{") + 1,
+                                    innerFilterParts = tempFilters[i].slice(pos, -1).split("|"),
+                                    args,
+                                    replace;
+
+                                // find args and replace to pass into filter
+                                if (innerFilterParts.length)
+                                    args = innerFilterParts[0];
+                                if (innerFilterParts.length > 1)
+                                    replace = innerFilterParts[1];
 
                                 field.filters.push({
                                     key: filt,
-                                    args: str
+                                    args: args,
+                                    replace: replace
                                 });
                             }
+                            //simple filter
                             else {
-                                field[filters[i]] = true;
                                 field.filters.push({
                                     key: filters[i]
                                 });
                             }
 
+                            //TODO: update custom filter code
                             if (typeof filters[tempFilters[i]] === "undefined") {
                                 //custom filter array
                                 //field.customFilters.push(tempFilters[i]);
@@ -299,7 +291,8 @@
                     }
                 }
                 //insert field into array
-                inputs[methods.cleanseName($element.attr("name"))] = field;
+                if ($element.attr("name"))
+                    inputs[methods.cleanseName($element.attr("name"))] = field;
             });
 
             //store inputs
@@ -317,172 +310,17 @@
             //add listener to form
             $form.on("submit.formvalidate", function (event) {
                 event.preventDefault();
-                errornumber = 0;
-                var errorDetail = [];
-                //loop through inputs and validate them
-                /*for (var key in inputs) {
-                    //console.log(inputs[key]);
-                    //skip disabled field
-                    if (!inputs[key].disabled && !inputs[key].element.is(":disabled")) {
-                        var validated = true, errorStart = errornumber; //keep track if input is valid, keep track if error class needs to be added
-                        var val = inputs[key].element.val().trim(); //store value
-                        var len = val.length; //store field length
 
-                        //if field is required check its val
-                        if (inputs[key].required && inputs[key].type !== "radio") {
-                            //check for any value
-                            if (!filters["required"].regex.test(val)) {
-                                //change the tooltip text to the correct error
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["required"].error]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-                        //if field has a specific type, validate it
-                        if (inputs[key].type !== "text") {
-                            if (inputs[key].type === "checkbox") { }
-                            // only validate radios if they are required
-                            else if (inputs[key].type === "radio") {
-                                if (inputs[key].required && !filters[inputs[key].type].regex(inputs[key].groupName)) {
-                                    if (settings.tooltips)
-                                        methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters[inputs[key].type].error]);
-                                    validated = false;
-                                    errornumber++;
-                                }
-                            }
-                            //other field type
-                            else if(inputs[key].type !== "select") {
-                                //validate custom type, ignore selects
-                                if (len > 0 && !filters[inputs[key].type].regex.test(val)) {
-                                    if (settings.tooltips)
-                                        methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters[inputs[key].type].error]);
-                                    validated = false;
-                                    errornumber++;
-                                }
-                            }
-                        }
-                        //if field has a filter
-                        if (inputs[key].match && len > 0) {
-                            if (!filters["match"].regex(val, inputs[key].match)) { //call function in match filter
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["match"].error.replace("{0}", $(inputs[key].match).attr("name"))]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-                        //check for day
-                        if (inputs[key].dateday && len > 0) {
-                            if (!filters["dateday"].regex(val)) { //call function in match filter
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["dateday"].error]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-                        //check for month
-                        if (inputs[key].datemonth && len > 0) {
-                            if (!filters["datemonth"].regex(val)) { //call function in match filter
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["datemonth"].error]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-                        //check for year
-                        if (inputs[key].dateyear && len > 0) {
-                            if (!filters["dateyear"].regex(val)) { //call function in match filter
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["dateyear"].error]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-
-                        //check for max
-                        if (typeof inputs[key].max !== "undefined" && len > 0) {
-                            if (!filters["max"].regex(parseFloat(val), inputs[key].max)) { //call function in match filter
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["max"].error]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-
-                        //check for min
-                        if (typeof inputs[key].min !== "undefined" && len > 0) {
-                            if (!filters["min"].regex(parseFloat(val), inputs[key].min)) { //call function in match filter
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), filters["max"].error]);
-                                validated = false;
-                                errornumber++;
-                            }
-                        }
-
-                        //Go through custom filters
-                        if (inputs[key].customFilters.length > 0) {
-                            for (var x = 0; x < inputs[key].customFilters.length; x++) {
-                                //check if custom filter has been added
-                                if (typeof customFilters[inputs[key].customFilters[x]] !== "undefined") {
-                                    if (!customFilters[inputs[key].customFilters[x]].regex(val, inputs[key].element)) {
-                                        if (settings.tooltips)
-                                            methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), customFilters[inputs[key].customFilters[x]].error]);
-                                        validated = false;
-                                        errornumber++;
-                                    }
-                                }
-                            }
-                        }
-
-                        //if field is not validated, add listeners to remove error fields and show tooltips
-                        if (!validated) {
-                            methods.errorListener.apply(formvalidate, [inputs[key]]);
-                            
-                            //if they have specified a parent, add the error class to it
-                            if (settings.parentElement)
-                                inputs[key].element.parents(settings.parentElement).addClass(settings.errorClass);
-
-                            //console.log(inputs[key].type, inputs[key].groupName)
-                            if (inputs[key].type !== "radio") {
-                                inputs[key].element.addClass(settings.errorClass).attr("data-valid", "false");
-                            }
-                            else {
-                                $('input[name="' + inputs[key].groupName + '"]').addClass(settings.errorClass).attr("data-valid", "false");
-                            }
-                        }
-                            //remove error class
-                        else {
-                            var removeError = 0;
-                            if (inputs[key] !== "radio") {
-                                inputs[key].element.attr("data-valid", "true");
-
-                                inputs[key].element.parent().find("input:not([type='hidden']), textarea, select").each(function () {
-                                    if ($(this).attr("data-valid") === "false")
-                                        removeError++;
-                                });
-
-                                inputs[key].element.removeClass(settings.errorClass);
-                            }
-                            else {
-                                $('input[name="' + inputs[key].groupName + '"]').removeClass(settings.errorClass).attr("data-valid", "true");
-                            }
-
-                            if (settings.parentElement && removeError === 0)
-                                inputs[key].element.parents(settings.parentElement).removeClass(settings.errorClass);
-                        }
-                    }
-                }*/
-
-                var stuff = methods.checkFilters.apply(formvalidate, [filters]);
-                console.log(stuff);
+                var inputsValidation = methods.validateFilters.apply(formvalidate, [filters]);
+                console.log(inputsValidation);
 
                 if (typeof settings.validate === "function") {
-                    if (!settings.validate($form, errornumber))
-                        errornumber++;
+                    if (!settings.validate($form, inputsValidation.errorNumber))
+                        inputsValidation.errorNumber++;
                 }
 
                 //if there are no errors, call success function
-                if (errornumber === 0) {
+                if (inputsValidation.errorNumber === 0) {
                     if (typeof settings.success === "function")
                         settings.success(event);
 
@@ -502,13 +340,8 @@
             });
         },
 
-        /*
-         * {
-         *  key: 'min',
-         *  args: '#input'
-         * }
-         */
-        checkFilters: function (fltrs) {
+        // go through inputs and validate with given filters
+        validateFilters: function (fltrs) {
             var $form = this.data("form"),
                 inputs = this.data("inputs"),
                 settings = this.data("settings"),
@@ -520,21 +353,29 @@
                 // make sure input is not disabled
                 if (!inputs[key].disabled && !inputs[key].element.is(":disabled")) {
                     var inputFilters = inputs[key].filters,
-                        val = inputs[key].element.val();
+                        val = inputs[key].element.val().trim();
 
                     // go through each of the inputs filters
                     for (var i = 0; i < inputFilters.length; i++) {
+                        var currentFilter = fltrs[inputFilters[i].key];
                         // make sure there is a value to test
-                        if (val.length > 0 && fltrs[inputFilters[i].key]) {
+                        if (val.length > 0 && currentFilter) {
                             var valid;
-                            if (typeof fltrs[inputFilters[i].key].regex === "function")
-                                valid = fltrs[inputFilters[i].key].regex(val, inputFilters[i].args);
+                            if (typeof currentFilter.regex === "function")
+                                valid = currentFilter.regex(val, inputFilters[i].args);
                             else
-                                valid = filters[inputFilters[i].key].regex.test(val);
+                                valid = currentFilter.regex.test(val);
 
                             if (!valid) {
-                                if (settings.tooltips)
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find(".field-validation-error"), fltrs[inputFilters[i].key].error]);
+                                if (settings.tooltips) {
+                                    var error = currentFilter.error;
+                                    if (typeof inputFilters[i].replace !== "undefined")
+                                        error = currentFilter.error.replace("{0}", inputFilters[i].replace);
+
+                                    console.log(error, inputFilters[i]);
+
+                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find("." + settings.tooltipErrorClass), error]);
+                                }
                                 validated = false;
                                 errornumber++;
                             }

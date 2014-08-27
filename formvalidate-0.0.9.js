@@ -167,6 +167,7 @@
             methods.validate.apply(this);
         },
 
+        // parse and add input filters for validation
         addFilters: function () {
             var settings = this.data("settings"),
                 $form = this.data("form"),
@@ -299,6 +300,7 @@
             this.data("inputs", inputs);
         },
 
+        // add submit listener to form
         validate: function () {
             var formvalidate = this,
                 settings = this.data("settings"),
@@ -417,6 +419,7 @@
             }
         },
 
+        // remove error from input
         removeFieldError: function (input) {
             var $form = this.data("form"),
                 settings = this.data("settings");
@@ -440,6 +443,7 @@
                 input.element.parents(settings.parentElement).removeClass(settings.errorClass);
         },
 
+        // add proper listeners to inputs on error
         errorListener: function (field) {
             var settings = this.data("settings");
 
@@ -524,6 +528,7 @@
             return name.replace(/[\[\]]+/g, "");
         },
 
+        // update the tooltip text
         changeTooltip: function ($el, html) {
             $el.html(html);
         },

@@ -1,6 +1,7 @@
 ﻿/*
  * Created by: Jon Tetzlaff
  * form validation plugin
+ * Version: 0.0.9
  */
 (function ($) {
     var animationTime = 350;
@@ -116,13 +117,12 @@
             //default settings
             var settings = $.extend({
                 success: "", //success callback
-                fail: "", //fail callback
+                error: "", //error callback
                 validate: "", //custom validate function
                 parentElement: "", //parent element to attach error class too
-                tooltips: true, //have helpful tooltips popup
-                //tooltipPosition: "right", //position tooltips (right, bottom)
+                validationErrors: true, //have helpful tooltips popup
                 errorClass: "input-validation-error",
-                tooltipErrorClass: "field-validation-error",
+                validationErrorClass: "field-validation-error",
                 filter: "", //any valid selector (only validate elements within the filter)
                 form: "", //any valid selector,
                 extend: undefined,
@@ -163,12 +163,12 @@
             //store filter
             $this.data("filter", filter);
 
-            methods.addFilters.apply(this);
+            methods.addInputs.apply(this);
             methods.validate.apply(this);
         },
 
         // parse and add input filters for validation
-        addFilters: function () {
+        addInputs: function () {
             var settings = this.data("settings"),
                 $form = this.data("form"),
                 $filter = this.data("filter"),
@@ -180,20 +180,11 @@
                 var field = {}; //store field values
                 field.element = $element;
                 field.filters = [];
-                //field.filters = {};
                 field.disabled = false;
                 var filtersString = $element.attr("data-filters"); //store filters
 
-                //if (settings.tooltips)
-                //    $element.parent().css({ position: "relative" });
-                //insert tooltips if wanted
-                if (settings.tooltips) {
-                    //if there are multiple inputs, only insert one tooltip
-                    //if ($element.parent().find("input, select, textarea").length > 1)
-                    //    $element.parent().append($(errorDiv).addClass(settings.tooltipErrorClass));
-                    //else
-                        $(errorDiv).insertAfter($element).addClass(settings.tooltipErrorClass);
-                }
+                if (settings.validationErrors) 
+                    $(errorDiv).insertAfter($element).addClass(settings.validationErrorClass);
 
                 //check type of input
                 if ($element.is("select"))
@@ -212,6 +203,7 @@
                     field.type = $element.attr("type");
 
                     field.filters.push({
+                        type: true,
                         key: $element.attr("type")
                     });
                 }
@@ -248,46 +240,25 @@
                     for (var i = 0; i < tempFilters.length; i++) {
                         //if in array, override type
                         if (jQuery.inArray(tempFilters[i], typeOverride) !== -1) {
-                            //TODO: remove inserted type from above
                             field.type = tempFilters[i];
+                            // find entered filter from above and remove
+                            for (var z = 0; z < field.filters.length; z++) {
+                                if (field.filters[z].type) {
+                                    field.filters.splice(z, 1);
+                                    break;
+                                }
+                            }
                             field.filters.push({
                                 key: tempFilters[i]
                             });
                         }
                         //parse filter
                         else {
-                            if (tempFilters[i].indexOf("{") !== -1) {
-                                //parse filter arguments
-                                var filt = tempFilters[i].substr(0, tempFilters[i].indexOf("{")),
-                                    pos = tempFilters[i].indexOf("{") + 1,
-                                    innerFilterParts = tempFilters[i].slice(pos, -1).split("|"),
-                                    args,
-                                    replace;
-
-                                // find args and replace to pass into filter
-                                if (innerFilterParts.length)
-                                    args = innerFilterParts[0];
-                                if (innerFilterParts.length > 1)
-                                    replace = innerFilterParts[1];
-
-                                field.filters.push({
-                                    key: filt,
-                                    args: args,
-                                    replace: replace
-                                });
-                            }
-                            //simple filter
-                            else {
-                                field.filters.push({
-                                    key: filters[i]
-                                });
-                            }
-
-                            //TODO: update custom filter code
-                            if (typeof filters[tempFilters[i]] === "undefined") {
-                                //custom filter array
-                                //field.customFilters.push(tempFilters[i]);
-                            }
+                            // pass filter to parser
+                            var filtObj = methods.parseFilter(tempFilters[i]);
+                            // only add filter if it is valid
+                            if(filtObj)
+                                field.filters.push(filtObj);
                         }
                     }
                 }
@@ -298,6 +269,46 @@
 
             //store inputs
             this.data("inputs", inputs);
+        },
+
+        parseFilter: function (filter) {
+            var filtObj;
+
+            if (filter.indexOf("{") !== -1) {
+                //parse filter arguments
+                var filt = filter.substr(0, filter.indexOf("{")),
+                    pos = filter.indexOf("{") + 1,
+                    innerFilterParts = filter.slice(pos, -1).split("|"),
+                    args,
+                    replace;
+
+                // find args and replace to pass into filter
+                if (innerFilterParts.length)
+                    args = innerFilterParts[0];
+                if (innerFilterParts.length > 1)
+                    replace = innerFilterParts[1];
+
+                filtObj = {
+                    key: filt,
+                    args: args,
+                    replace: replace
+                };
+            }
+                //simple filter
+            else {
+                filtObj = {
+                    key: filter
+                };
+            }
+
+            if (filters[filtObj.key])
+                return filtObj;
+            else if (customFilters[filtObj.key])
+                filtObj.custom = true;
+            else
+                filtObj = undefined;
+
+            return filtObj;
         },
 
         // add submit listener to form
@@ -313,7 +324,7 @@
             $form.on("submit.formvalidate", function (event) {
                 event.preventDefault();
 
-                var inputsValidation = methods.validateFilters.apply(formvalidate, [filters]);
+                var inputsValidation = methods.validateFilters.apply(formvalidate);
                 console.log(inputsValidation);
 
                 if (typeof settings.validate === "function") {
@@ -329,21 +340,20 @@
                     if (!settings.submitOnSuccess)
                         event.preventDefault();
                 }
-                    //else call fail function
+               //else call error function
                 else {
                     event.preventDefault();
 
-                    if (typeof settings.fail === "function")
-                        settings.fail(event);
+                    if (typeof settings.error === "function")
+                        settings.error(event);
 
                     $form.find("." + settings.errorClass).first().focus();
-                    //return false;
                 }
             });
         },
 
         // go through inputs and validate with given filters
-        validateFilters: function (fltrs) {
+        validateFilters: function () {
             var $form = this.data("form"),
                 inputs = this.data("inputs"),
                 settings = this.data("settings"),
@@ -355,10 +365,14 @@
                 // make sure input is not disabled
                 if (!inputs[key].disabled && !inputs[key].element.is(":disabled")) {
                     var inputFilters = inputs[key].filters,
-                        val = inputs[key].element.val().trim();
+                        val = inputs[key].element.val().trim()
 
                     // go through each of the inputs filters
                     for (var i = 0; i < inputFilters.length; i++) {
+                        var fltrs = filters;
+                        if (inputFilters[i].custom)
+                            fltrs = customFilters;
+
                         var currentFilter = fltrs[inputFilters[i].key];
                         // make sure there is a value to test
                         if (val.length > 0 && currentFilter) {
@@ -369,14 +383,14 @@
                                 valid = currentFilter.regex.test(val);
 
                             if (!valid) {
-                                if (settings.tooltips) {
+                                if (settings.validationErrors) {
                                     var error = currentFilter.error;
                                     if (typeof inputFilters[i].replace !== "undefined")
                                         error = currentFilter.error.replace("{0}", inputFilters[i].replace);
 
                                     console.log(error, inputFilters[i]);
 
-                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find("." + settings.tooltipErrorClass), error]);
+                                    methods.changeTooltip.apply($form, [inputs[key].element.parent().find("." + settings.validationErrorClass), error]);
                                 }
                                 validated = false;
                                 errornumber++;
@@ -463,7 +477,7 @@
                     field.element.parents(settings.parentElement).removeClass(settings.errorClass);
                     $selector.removeClass(settings.errorClass);
 
-                    if (settings.tooltips)
+                    if (settings.validationErrors)
                         field.element.parent().find(".field-validation-error").hide();
 
                     $selector.off(".formvalidate");
@@ -481,14 +495,14 @@
                         $this.parents(settings.parentElement).removeClass(settings.errorClass);
                         $this.removeClass(settings.errorClass);
 
-                        if (settings.tooltips)
+                        if (settings.validationErrors)
                             $this.parent().find(".field-validation-error").hide();
 
                         $this.off(".formvalidate");
                     }
                 });
 
-                if (settings.tooltips) {
+                if (settings.validationErrors) {
                     field.element.on("focus.formvalidate", function () {
                         $(this).parent().find(".field-validation-error").show();
                     }).on("focusout.formvalidate", function () {

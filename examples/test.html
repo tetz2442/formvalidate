@@ -11,7 +11,7 @@
 <body>
     <form>
         <div>
-            <input type="text" name="Custom1" value="" required />
+            <input type="text" name="Custom1" required />
         </div>
         <div>
             <input type="number" name="Custom2" value="-1" min="0"  max="1"/>
@@ -24,6 +24,9 @@
         </div>
         <div>
             <input type="password" name="Custom5" value="12" data-filters="match{#test|Password}" />
+        </div>
+        <div>
+            <input type="text" name="Custom6" value="" data-filters="zip" required />
         </div>
         <div>
             <input type="submit" value="Submit" />

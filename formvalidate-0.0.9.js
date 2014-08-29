@@ -154,8 +154,8 @@
                 field.disabled = false;
                 var filtersString = $element.attr("data-filters"); //store filters
 
-                if (settings.validationErrors) 
-                    $(errorDiv).insertAfter($element).addClass(settings.validationErrorClass);
+                if (settings.validationErrors && $element.parent().find("." + settings.validationErrorClass).length === 0)
+                    $element.parent().append($(errorDiv).addClass(settings.validationErrorClass));
 
                 //check type of input
                 if ($element.is("select"))
@@ -526,7 +526,7 @@
 
         // update the tooltip text
         changeTooltip: function ($el, html) {
-            $el.html(html);
+            $el.html(html).show();
         },
 
         //disable input validation

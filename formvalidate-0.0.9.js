@@ -154,7 +154,11 @@
                 field.disabled = false;
                 var filtersString = $element.attr("data-filters"); //store filters
 
-                if (settings.validationErrors && $element.parent().find("." + settings.validationErrorClass).length === 0)
+                // remove error span from appearing on field
+                if ($element.attr("data-noerror"))
+                    field.hasErrorSpan = true;
+
+                if (settings.validationErrors && !field.hasErrorSpan && $element.parent().find("." + settings.validationErrorClass).length === 0)
                     $element.parent().append($(errorDiv).addClass(settings.validationErrorClass));
 
                 //check type of input
@@ -183,13 +187,13 @@
                 }
 
                 //check to see if field is required
-                if ($element.attr("required") !== undefined) {
+                if ($element.attr("required")) {
                     field.filters.push({
                         key: "required"
                     });
                 }
                 //check if min and max are set
-                if ($element.attr("max") !== undefined) {
+                if ($element.attr("max")) {
                     var max = parseInt($element.attr("max"), 10);
 
                     field.filters.push({
@@ -198,7 +202,7 @@
                         replace: max
                     });
                 }
-                if ($element.attr("min") !== undefined) {
+                if ($element.attr("min")) {
                     var min = parseInt($element.attr("min"), 10);
 
                     field.filters.push({
@@ -334,7 +338,7 @@
                 errornumber = 0;
 
             function applyError(inputFilter, currentFilter, input) {
-                if (settings.validationErrors) {
+                if (settings.validationErrors && !input.hasErrorSpan) {
                     var error = currentFilter.error;
                     if (typeof inputFilter.replace !== "undefined")
                         error = currentFilter.error.replace("{0}", inputFilter.replace);

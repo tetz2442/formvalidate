@@ -41,6 +41,36 @@ Example HTML
 </form>
 ```
 
+###Advanced Usage
+```
+$signupForm.formvalidate({
+    validationErrors: false,
+    // custom validation for form
+    validate: function($form) {
+        var valid = true;
+        // do some validation here
+        // then return a boolean
+
+        return true;
+    },
+    success: function() {
+        // run some code here on validation success
+        // then maybe submit the form
+    },
+    // extend filters
+    extend: {
+        'creditcard': {
+            regex: function(val) {
+                if(CreditCard.test(val)) return true;
+
+                return false;
+            },
+            error: "Credit card is invalid."
+        }
+    }
+});
+```
+
 ###Options
 ```
 //default settings

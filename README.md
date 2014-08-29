@@ -102,6 +102,8 @@ $signupForm.formvalidate({
 - match (matches value in another field)
 
 ###Defining filters
+Comma seperated list set in the data-filters attribute of the input. If you need to specify an argument for the filter it goes in brackets {}. The arguments in there are seperated by a pipe |. For the match filter, the first argument is the selector for the input to match, the second is the name of the matching filter.
+
 ```
 <input type="password" name="Custom5" value="12" data-filters="match{#test|Password}" />
 ```

@@ -300,8 +300,6 @@
             var errornumber = 0; //keep track of nummber of errors
             //add listener to form
             $form.on("submit.formvalidate", function (event) {
-                event.preventDefault();
-
                 var inputsValidation = methods.validateFilters.apply(formvalidate);
                 //console.log(inputsValidation);
 

@@ -515,7 +515,7 @@
             }
 
             this.removeData("inputs");
-            methods.addFilters.apply(this);
+            methods.addInputs.apply(this);
         },
 
         //extend the filters

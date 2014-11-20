@@ -364,7 +364,6 @@
                     for (var z = 0; z < inputFilters.length; z++) {
                         if (inputFilters[z].key === "required") {
                             validated = filters["required"].regex.test(val);
-                            console.log(validated, val);
                             if (!validated) {
                                 applyError(inputFilters[z], filters["required"], inputs[key]);
                                 errornumber++;
@@ -373,14 +372,12 @@
                         }
                     }
 
-                    console.log(inputFilters);
                     // go through each of the inputs filters
                     for (var i = 0; i < inputFilters.length; i++) {
                         var fltrs = filters;
                         if (inputFilters[i].custom)
                             fltrs = customFilters;
 
-                        console.log(inputFilters[i]);
                         if (inputFilters[i].key !== "required") {
                             var currentFilter = fltrs[inputFilters[i].key];
                             //console.log(inputFilters[i], currentFilter);
@@ -392,7 +389,6 @@
                                 else
                                     valid = currentFilter.regex.test(val);
 
-                                console.log(inputFilters[i].key, valid, val);
                                 if (!valid) {
                                     if (settings.validationErrors) {
                                         applyError(inputFilters[i], currentFilter, inputs[key]);

@@ -99,6 +99,8 @@
                 submitOnSuccess: false
             }, options);
 
+            settings.defaultErrorClass = "js-field-validation-error";
+
             var $form,
                 $filter,
                 $this = this;
@@ -340,10 +342,10 @@
                         error = currentFilter.error.replace("{0}", inputFilter.replace);
 
                     //console.log(error, inputFilters[i]);
-                    var $error = input.element.parent().find("." + settings.validationErrorClass);
+                    var $error = input.element.parent().find("." + settings.defaultErrorClass);
 
                     if (!$error.length) {
-                        $error = $('<span/>').addClass(settings.validationErrorClass);
+                        $error = $('<span/>').addClass(settings.validationErrorClass).addClass(settings.defaultErrorClass);
                         input.element.after($error);
                     }
 
@@ -476,7 +478,7 @@
                     $selector.removeClass(settings.errorClass);
 
                     if (settings.validationErrors)
-                        field.element.parent().find('.' + settings.validationErrorClass).remove();
+                        field.element.next().remove();
 
                     $selector.off(".formvalidate");
                 });
@@ -494,7 +496,7 @@
                         $this.removeClass(settings.errorClass);
 
                         if (settings.validationErrors)
-                            $this.parent().find('.' + settings.validationErrorClass).remove();
+                            $this.next().remove();
 
                         $this.off(".formvalidate");
                     }
@@ -567,7 +569,7 @@
             //console.log("form");
             if ($form) {
                 $form.off(".formvalidate");
-                $form.find('.' + settings.validationErrorClass).remove();
+                $form.find('.' + settings.defaultErrorClass).remove();
                 //remove stored data
                 this.removeData("inputs").removeData("form").removeData("filter").removeData("settings");
                 return true;

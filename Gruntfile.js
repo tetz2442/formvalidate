@@ -19,8 +19,8 @@ module.exports = function(grunt) {
                     '<%= grunt.template.today("yyyy-mm-dd") %> */'
                 },
                 files: {
-                    'dist/jquery.formvalidate-0.1.0.min.js': [
-                        'jquery.formvalidate-0.1.0.js',
+                    'dist/jquery.formvalidate-0.2.0.min.js': [
+                        'jquery.formvalidate-0.2.0.js',
                     ]
                 }
             }

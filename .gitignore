@@ -193,7 +193,6 @@ $RECYCLE.BIN/
 # Packages
 *.egg
 *.egg-info
-dist/
 build/
 eggs/
 parts/
@@ -214,3 +213,6 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+node_modules/
+.idea/

@@ -2,52 +2,73 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title></title>
+    <link href="css/bootstrap.css" rel="stylesheet">
     <style>
         .input-validation-error {
             border: 1px solid #ff0000;
         }
+
+        form {
+            padding-top: 40px;
+        }
     </style>
 </head>
 <body>
-    <form>
-        <div>
-            <input type="text" name="Custom1" required />
-        </div>
-        <div>
-            <input type="number" name="Custom2" value="-1" min="0"  max="1"/>
-        </div>
-        <div>
-            <input type="tel" name="Custom3" value="123123123" />
-        </div>
-        <div>
-            <input id="test" type="password" name="Custom4" value="123" />
-        </div>
-        <div>
-            <input type="password" name="Custom5" value="12" data-filters="match{#test|Password}" />
-        </div>
-        <div>
-            <input type="text" name="Custom6" value="" data-filters="zip" required />
-        </div>
-        <div>
-            <input type="radio" name="Custome7" value="1" required />
-            <input type="radio" name="Custome7" value="2" required />
-            <input type="radio" name="Custome7" value="3" required />
-        </div>
-        <div>
-            <select name="Custom8" required>
-                <option value="">--</option>
-                <option value="1">1</option>
-            </select>
-        </div>
-        <div>
-            <input type="text" name="Custom9" value="" required data-noerror="true" />
-            <input type="text" name="Custom10" value="" required data-noerror="true" />
-        </div>
-        <div>
-            <input type="submit" value="Submit" />
-        </div>
-    </form>
-
+    <div class="container">
+        <form role="form">
+            <div class="form-group">
+                <label for="Custom1">Text</label>
+                <input class="form-control" type="text" id="Custom1" name="Custom1" required />
+            </div>
+            <div class="form-group">
+                <label for="Custom2">Number with min max</label>
+                <input class="form-control" type="number" id="Custom2" name="Custom2" value="-1" min="0"  max="1"/>
+            </div>
+            <div class="form-group">
+                <label for="Custom3">Telephone</label>
+                <input class="form-control" type="tel" id="Custom3" name="Custom3" value="123123123" />
+            </div>
+            <div class="form-group">
+                <label for="Custom4">Password</label>
+                <input class="form-control" id="test" id="Custom4" type="password" name="Custom4" value="123" />
+            </div>
+            <div class="form-group">
+                <label for="Custom5">Confirm Password</label>
+                <input class="form-control" type="password" id="Custom5" name="Custom5" value="12" data-filters="match{#test|Password}" />
+            </div>
+            <div class="form-group">
+                <label for="Custom6">Zip code</label>
+                <input class="form-control" type="text" id="Custom6" name="Custom6" value="" data-filters="zip" required />
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="radio" name="Custome7" value="1" required /> Option 1
+                </label>
+                <label>
+                    <input type="radio" name="Custome7" value="2" required /> Option 2
+                </label>
+                <label>
+                    <input type="radio" name="Custome7" value="3" required /> Option 3
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="Custom8">Select</label>
+                <select class="form-control" id="custom8" name="Custom8" required>
+                    <option value="">--</option>
+                    <option value="1">1</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="Custom9">No Error</label>
+                <input class="form-control" type="text" id="Custom9" name="Custom9" value="" required data-noerror="true" />
+                <label for="Custom10">No Error</label>
+                <input class="form-control" type="text" id="Custom10" name="Custom10" value="" required data-noerror="true" />
+            </div>
+            <div class="form-group">
+                <input class="btn" type="submit" value="Submit" />
+            </div>
+        </form>
+    </div>
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="../jquery.formvalidate-0.1.0.js"></script>

@@ -1,4 +1,4 @@
-﻿/*
+﻿/*!
  * Created by: Jon Tetzlaff
  * form validation plugin
  * Version: 0.1.0
@@ -17,11 +17,6 @@
         'required': {
             regex: /.+/,
             error: "This is a required field."
-        },
-        'password': {
-            //regex: /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/,
-            regex: /.+/,
-            error: "Password field is required."
         },
         'number': {
             regex: /^\d*[0-9]\d*$/,

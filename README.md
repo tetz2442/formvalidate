@@ -9,7 +9,7 @@ Jquery Form validate plugin
 ```
 
 ###Usage
-The plugin will read your your inputs and base filters off of that. So if you have a input with type "number", it will automatically validate that the field has only numbers in it.
+The plugin will read your inputs and base filters off of that. So if you have a input with type "number", it will automatically validate that the field has only numbers in it.
 
 JS
 ```
@@ -93,17 +93,17 @@ $signupForm.formvalidate({
 - required `required`
 - number `data-validate-type="number"`
 - letters `data-validate-type="letters"`
-- email `type="email`
+- email `type="email"`
 - radio groups
-- telephone (U.S. only) `type="tel"`
+- telephone (U.S. only) `type="telephone"`
 - zip codes (55555 or 55555-5677) `data-validate-type="zip"`
 - url `data-validate-type="url"`
 - min and max for number fields
-- match (matches value in another field) `data-filters="#match"`
+- match (matches value in another field) `data-validate-filters="match{#match}"`
 
 #####Other options
 
-- Remove error spans from specific fields `data-validate-noerrors="true"`
+- Remove error tooltips from specific fields `data-validate-noerrors="true"`
 
 ###Defining filters
 Comma separated list set in the data-validate-filters attribute of the input. If you need to specify an argument for the filter it goes in brackets {}. The arguments in there are separated by a pipe |. For the match filter, the first argument is the selector for the input to match, the second is the name of the matching filter.

@@ -35,7 +35,7 @@
             },
             error: "You must select an option."
         },
-        'tel': {
+        'telephone': {
             regex: /^\(?(\d{3})\)?[- ]?(\d{3})[- ]?(\d{4})$/, //accepted formats (714)3455967, 7152349456, 712-345-3456
             error: "Please enter a valid US phone number (Ex. 555-345-3445)."
         },
@@ -147,7 +147,7 @@
                 field.element = $el;
                 field.filters = [];
                 field.disabled = false;
-                var filtersString = $el.attr("data-filters"); //store filters
+                var filtersString = $el.attr("data-validate-filters"); //store filters
 
                 // remove error span from appearing on field
                 if ($el.attr("data-validate-noerror"))

@@ -29,7 +29,7 @@ Example HTML
         <input id="test" type="password" name="Custom4" value="123" />
     </div>
     <div>
-        <input type="password" name="Custom5" value="12" data-filters="match{#test|Password}" />
+        <input type="password" name="Custom5" value="12" data-validate-filters="match{#test|Password}" />
     </div>
     <div>
         <input type="text" name="Custom9" value="" required data-noerror="true" />
@@ -106,8 +106,8 @@ $signupForm.formvalidate({
 - Remove error spans from specific fields `data-validate-noerrors="true"`
 
 ###Defining filters
-Comma seperated list set in the data-filters attribute of the input. If you need to specify an argument for the filter it goes in brackets {}. The arguments in there are seperated by a pipe |. For the match filter, the first argument is the selector for the input to match, the second is the name of the matching filter.
+Comma separated list set in the data-validate-filters attribute of the input. If you need to specify an argument for the filter it goes in brackets {}. The arguments in there are separated by a pipe |. For the match filter, the first argument is the selector for the input to match, the second is the name of the matching filter.
 
 ```
-<input type="password" name="Custom5" value="12" data-filters="match{#test|Password}" />
+<input type="password" name="Custom5" value="12" data-validate-filters="match{#test|Password}" />
 ```

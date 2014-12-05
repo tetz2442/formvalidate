@@ -8,7 +8,6 @@
 
     var animationTime = 350;
     //var inputs = {}; //stores inputs in associative array
-    var typeOverride = ["zip", "letters", "number"]; //used to override input type if needed for filtering
 
     /*
      * REGEX expressions from https://github.com/elclanrs/jq-idealforms
@@ -143,51 +142,52 @@
 
             //find fields in form, store them in inputs object
             $filter.find("input:not([type='hidden'], [type='submit']), textarea, select").each(function () {
-                var $element = $(this);
+                var $el = $(this);
                 var field = {}; //store field values
-                field.element = $element;
+                field.element = $el;
                 field.filters = [];
                 field.disabled = false;
-                var filtersString = $element.attr("data-filters"); //store filters
+                var filtersString = $el.attr("data-filters"); //store filters
 
                 // remove error span from appearing on field
-                if ($element.attr("data-noerror"))
+                if ($el.attr("data-validate-noerror"))
                     field.hasErrorSpan = true;
 
                 //check type of input
-                if ($element.is("select"))
+                if ($el.is("select"))
                     field.type = "select";
-                else if ($element.is("checkbox"))
+                else if ($el.is("checkbox"))
                     field.type = "checkbox";
-                else if ($element.is(":radio")) {
+                else if ($el.is(":radio")) {
                     field.type = "radio";
-                    field.groupName = $element.attr("name");
+                    field.groupName = $el.attr("name");
                     field.filters.push({
                         key: "radio",
-                        args: $element.attr("name")
+                        args: $el.attr("name")
                     });
                 }
-                else if ($element.attr("type")) {
-                    field.type = $element.attr("type");
+                else if ($el.attr("type") || $el.attr('data-validate-type')) {
+                    console.log(field);
+                    field.type = $el.attr('data-validate-type') || $el.attr("type");
 
                     // add type to filters if it exists
                     if (filters[field.type]) {
                         field.filters.push({
                             type: true,
-                            key: $element.attr("type")
+                            key: field.type
                         });
                     }
                 }
 
                 //check to see if field is required
-                if ($element.attr("required")) {
+                if ($el.attr("required")) {
                     field.filters.push({
                         key: "required"
                     });
                 }
                 //check if min and max are set
-                if ($element.attr("max")) {
-                    var max = parseInt($element.attr("max"), 10);
+                if ($el.attr("max")) {
+                    var max = parseInt($el.attr("max"), 10);
 
                     field.filters.push({
                         key: "max",
@@ -195,8 +195,8 @@
                         replace: max
                     });
                 }
-                if ($element.attr("min")) {
-                    var min = parseInt($element.attr("min"), 10);
+                if ($el.attr("min")) {
+                    var min = parseInt($el.attr("min"), 10);
 
                     field.filters.push({
                         key: "min",
@@ -210,7 +210,7 @@
                     var tempFilters = filtersString.split(",");
                     for (var i = 0; i < tempFilters.length; i++) {
                         //if in array, override type
-                        if ($.inArray(tempFilters[i], typeOverride) !== -1) {
+                        /*if ($.inArray(tempFilters[i], typeOverride) !== -1) {
                             field.type = tempFilters[i];
                             // find entered filter from above and remove
                             for (var z = 0; z < field.filters.length; z++) {
@@ -222,20 +222,20 @@
                             field.filters.push({
                                 key: tempFilters[i]
                             });
-                        }
+                        }*/
                             //parse filter
-                        else {
+                        //else {
                             // pass filter to parser
                             var filtObj = methods.parseFilter(tempFilters[i]);
                             // only add filter if it is valid
                             if (filtObj)
                                 field.filters.push(filtObj);
-                        }
+                        //}
                     }
                 }
                 //insert field into array
-                if ($element.attr("name"))
-                    inputs[methods.cleanseName($element.attr("name"))] = field;
+                if ($el.attr("name"))
+                    inputs[methods.cleanseName($el.attr("name"))] = field;
             });
 
             //store inputs
@@ -304,7 +304,7 @@
                 }
 
                 //if there are no errors, call success function
-                if (inputsValidation.errorNumber === 0) {
+                if (!inputsValidation.errorNumber) {
                     if (typeof settings.success === "function")
                         settings.success(event);
 
@@ -353,6 +353,7 @@
 
                 // make sure input is not disabled
                 if (!inputs[key].disabled && !inputs[key].element.is(":disabled")) {
+                    console.log('validate', inputs[key]);
                     var inputFilters = inputs[key].filters,
                         val = inputs[key].element.val().trim();
 
@@ -376,6 +377,7 @@
                             fltrs = customFilters;
 
                         if (inputFilters[i].key !== "required") {
+                            console.log(inputFilters[i].key);
                             var currentFilter = fltrs[inputFilters[i].key];
                             //console.log(inputFilters[i], currentFilter);
                             // make sure there is a value to test
@@ -472,7 +474,7 @@
                     field.element.parents(settings.parentElement).removeClass(settings.errorClass);
                     $selector.removeClass(settings.errorClass);
 
-                    if (settings.validationErrors)
+                    if (settings.validationErrors && !field.hasErrorSpan)
                         field.element.next().remove();
 
                     $selector.off(".formvalidate");
@@ -490,7 +492,7 @@
                         $this.parents(settings.parentElement).removeClass(settings.errorClass);
                         $this.removeClass(settings.errorClass);
 
-                        if (settings.validationErrors)
+                        if (settings.validationErrors && !field.hasErrorSpan)
                             $this.next().remove();
 
                         $this.off(".formvalidate");

@@ -90,16 +90,20 @@ $signupForm.formvalidate({
 ```
 
 ###Supported filters
-- required
-- number
-- letters
-- email
+- required `required`
+- number `data-validate-type="number"`
+- letters `data-validate-type="letters"`
+- email `type="email`
 - radio groups
-- telephone (U.S. only)
-- zip codes (55555 or 55555-5677)
-- url
+- telephone (U.S. only) `type="tel"`
+- zip codes (55555 or 55555-5677) `data-validate-type="zip"`
+- url `data-validate-type="url"`
 - min and max for number fields
-- match (matches value in another field)
+- match (matches value in another field) `data-filters="#match"`
+
+#####Other options
+
+- Remove error spans from specific fields `data-validate-noerrors="true"`
 
 ###Defining filters
 Comma seperated list set in the data-filters attribute of the input. If you need to specify an argument for the filter it goes in brackets {}. The arguments in there are seperated by a pipe |. For the match filter, the first argument is the selector for the input to match, the second is the name of the matching filter.

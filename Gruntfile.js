@@ -15,6 +15,7 @@ module.exports = function(grunt) {
                         hoist_funs: false,
                         hoist_vars: false
                     },
+                    sourceMap: true,
                     banner: '/*! <%= pkg.name %> - v<%= pkg.version %> - ' +
                     '<%= grunt.template.today("yyyy-mm-dd") %> */'
                 },

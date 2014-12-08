@@ -6,8 +6,17 @@
 (function ($) {
     'use strict';
 
-    var animationTime = 350;
-    //var inputs = {}; //stores inputs in associative array
+    // string trim polyfill
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim
+    if (!String.prototype.trim) {
+        (function () {
+            // Make sure we trim BOM and NBSP
+            var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+            String.prototype.trim = function () {
+                return this.replace(rtrim, '');
+            };
+        })();
+    }
 
     /*
      * REGEX expressions from https://github.com/elclanrs/jq-idealforms
@@ -73,25 +82,26 @@
     };
 
     // store any custom regex filters
-    var customFilters = {};
+    var customFilters = {},
+        defaultSettings = {
+            success: '', //success callback
+            error: '', //error callback
+            validate: '', //custom validate function
+            parentElement: '', //parent element to attach error class too
+            validationErrors: true, //have helpful tooltips popup
+            errorClass: 'input-validation-error',
+            validationErrorClass: 'field-validation-error',
+            filter: '', //any valid selector (only validate elements within the filter)
+            form: '', //any valid selector,
+            extend: undefined,
+            submitOnSuccess: false
+        };
 
     var methods = {
 
         init: function (options) {
             //default settings
-            var settings = $.extend({
-                success: '', //success callback
-                error: '', //error callback
-                validate: '', //custom validate function
-                parentElement: '', //parent element to attach error class too
-                validationErrors: true, //have helpful tooltips popup
-                errorClass: 'input-validation-error',
-                validationErrorClass: 'field-validation-error',
-                filter: '', //any valid selector (only validate elements within the filter)
-                form: '', //any valid selector,
-                extend: undefined,
-                submitOnSuccess: false
-            }, options);
+            var settings = $.extend(defaultSettings, options);
 
             settings.defaultErrorClass = 'js-field-validation-error';
 
@@ -209,28 +219,11 @@
                 if (filtersString) {
                     var tempFilters = filtersString.split(',');
                     for (var i = 0; i < tempFilters.length; i++) {
-                        //if in array, override type
-                        /*if ($.inArray(tempFilters[i], typeOverride) !== -1) {
-                            field.type = tempFilters[i];
-                            // find entered filter from above and remove
-                            for (var z = 0; z < field.filters.length; z++) {
-                                if (field.filters[z].type) {
-                                    field.filters.splice(z, 1);
-                                    break;
-                                }
-                            }
-                            field.filters.push({
-                                key: tempFilters[i]
-                            });
-                        }*/
-                            //parse filter
-                        //else {
-                            // pass filter to parser
-                            var filtObj = methods.parseFilter(tempFilters[i]);
-                            // only add filter if it is valid
-                            if (filtObj)
-                                field.filters.push(filtObj);
-                        //}
+                        // pass filter to parser
+                        var filtObj = methods.parseFilter(tempFilters[i]);
+                        // only add filter if it is valid
+                        if (filtObj)
+                            field.filters.push(filtObj);
                     }
                 }
                 //insert field into array
@@ -328,25 +321,7 @@
             var $form = this.data('form'),
                 inputs = this.data('inputs'),
                 settings = this.data('settings'),
-                errornumber = 0;
-
-            function applyError(inputFilter, currentFilter, input) {
-                if (settings.validationErrors && !input.hasErrorSpan) {
-                    var error = currentFilter.error;
-                    if (typeof inputFilter.replace !== 'undefined')
-                        error = currentFilter.error.replace('{0}', inputFilter.replace);
-
-                    //console.log(error, inputFilters[i]);
-                    var $error = input.element.parent().find('.' + settings.defaultErrorClass);
-
-                    if (!$error.length) {
-                        $error = $('<span/>').addClass(settings.validationErrorClass).addClass(settings.defaultErrorClass);
-                        input.element.after($error);
-                    }
-
-                    methods.changeTooltip.apply($form, [$error, error]);
-                }
-            }
+                errorNumber = 0;
 
             for (var key in inputs) {
                 var validated = true;
@@ -363,8 +338,8 @@
                         if (inputFilters[z].key === 'required') {
                             validated = filters['required'].regex.test(val);
                             if (!validated) {
-                                applyError(inputFilters[z], filters['required'], inputs[key]);
-                                errornumber++;
+                                methods.applyError.apply($form, [ inputFilters[z], filters['required'], inputs[key] ]);
+                                errorNumber++;
                             }
                             break;
                         }
@@ -390,10 +365,10 @@
 
                                 if (!valid) {
                                     if (settings.validationErrors) {
-                                        applyError(inputFilters[i], currentFilter, inputs[key]);
+                                        methods.applyError.apply($form, [ inputFilters[i], currentFilter, inputs[key] ]);
                                     }
                                     validated = false;
-                                    errornumber++;
+                                    errorNumber++;
                                 }
                             }
                         }
@@ -406,9 +381,30 @@
             }
 
             return {
-                valid: errornumber === 0,
-                errorNumber: errornumber
+                valid: errorNumber === 0,
+                errorNumber: errorNumber
             };
+        },
+
+        applyError: function(inputFilter, currentFilter, input) {
+            var $form = this.data('form'),
+                settings = this.data('settings');
+
+            if (settings.validationErrors && !input.hasErrorSpan) {
+                var error = currentFilter.error;
+                if (typeof inputFilter.replace !== 'undefined')
+                    error = currentFilter.error.replace('{0}', inputFilter.replace);
+
+                //console.log(error, inputFilters[i]);
+                var $error = input.element.parent().find('.' + settings.defaultErrorClass);
+
+                if (!$error.length) {
+                    $error = $('<span/>').addClass(settings.validationErrorClass).addClass(settings.defaultErrorClass);
+                    input.element.after($error);
+                }
+
+                methods.changeTooltip.apply($form, [$error, error]);
+            }
         },
 
         fieldError: function (input) {

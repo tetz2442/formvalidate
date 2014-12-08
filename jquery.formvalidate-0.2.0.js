@@ -400,7 +400,16 @@
 
                 if (!$error.length) {
                     $error = $('<span/>').addClass(settings.validationErrorClass).addClass(settings.defaultErrorClass);
-                    input.element.after($error);
+
+                    if(input.element.is(':checkbox') || input.element.is(':radio')) {
+                        if(input.element.next().is('label')) {
+                            input.element.next().after($error);
+                        }
+                        else
+                            input.element.parent().after($error);
+                    }
+                    else
+                        input.element.after($error);
                 }
 
                 methods.changeTooltip.apply($form, [$error, error]);

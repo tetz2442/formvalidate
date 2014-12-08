@@ -41,6 +41,22 @@ Example HTML
 </form>
 ```
 
+#####Radio buttons
+
+Radio buttons and checkboxes should have a parent element that they are wrapped in. The error tooltip will be appended after the last radio button.
+```
+<label>
+    <input type="radio" name="Custome7" value="1" required /> Option 1
+</label>
+<label>
+    <input type="radio" name="Custome7" value="2" required /> Option 2
+</label>
+<label>
+    <input type="radio" name="Custome7" value="3" required /> Option 3
+</label>
+<!-- Error span will be output here -->
+```
+
 ###Advanced Usage
 ```
 $signupForm.formvalidate({

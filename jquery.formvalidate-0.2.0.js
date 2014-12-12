@@ -97,6 +97,58 @@
             submitOnSuccess: false
         };
 
+    function FormValidate(options) {
+        this._init(this, options);
+    }
+
+    FormValidate.prototype._init = function($form, options) {
+        this._settings = $.extend(defaultSettings, options);
+        this._settings.defaultErrorClass = 'js-field-validation-error';
+
+        if (this._settings.form.length > 0)
+            this._$form = $form.find(this._settings.form);
+        else
+            this._$form = $form;
+
+        //form cannot be found, stop execution
+        if (this._$form.length === 0)
+            return;
+
+        //make sure to stop default browser validation
+        this._$form.attr('novalidate', 'novalidate');
+
+        //extend the filtering
+        if (typeof this._settings.extend !== 'undefined')
+            methods.extend(this._settings.extend);
+
+        //store settings
+        //this._$form.data('settings', this._settings);
+        //store form
+        //$this.data('form', $form);
+
+        //filter down inputs
+        if (this._settings.filter)
+            this._$filter = this._$form.find(this._settings.filter);
+        else
+            this._$filter = this._$form;
+
+        //store filter
+        //$this.data('filter', $filter);
+
+        this._addInputs();
+        this._validate();
+        //methods.addInputs.apply(this);
+        //methods.validate.apply(this);
+    };
+
+    FormValidate.prototype._addInputs = function() {
+
+    };
+
+    FormValidate.prototype._validate = function() {
+
+    };
+
     var methods = {
 
         init: function (options) {

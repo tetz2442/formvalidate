@@ -72,6 +72,23 @@
                 <input class="form-control" type="text" id="Custom10" name="Custom10" value="" required data-validate-noerror="true" />
             </div>
             <div class="form-group">
+                <input class="btn js-destroy" type="button" value="Destroy" />
+                <input class="btn" type="submit" value="Submit" />
+            </div>
+        </form>
+    </div>
+
+    <div class="container">
+        <form role="form">
+            <div class="form-group">
+                <label for="Custom20">Text</label>
+                <input class="form-control" type="text" id="Custom20" name="Custom20" required />
+            </div>
+            <div class="form-group">
+                <label for="Custom21">Number with min max</label>
+                <input class="form-control" type="number" id="Custom21" name="Custom21" value="-1" min="0"  max="1"/>
+            </div>
+            <div class="form-group">
                 <input class="btn" type="submit" value="Submit" />
             </div>
         </form>
@@ -81,6 +98,10 @@
     <script src="../jquery.formvalidate-0.3.0.js"></script>
     <script>
         $("form").formvalidate();
+
+        $('.js-destroy').click(function() {
+            $(this).parents('form').data('formvalidate').destroy();
+        });
     </script>
 </body>
 </html>

@@ -445,7 +445,7 @@
             //console.log(field);
             var $selector = field.$el;
             if (field.groupName)
-                $selector = $('input[name="' + field.groupName + '"]');
+                $selector = this._$form.find('input[name="' + field.groupName + '"]');
 
             //remove all listeners
             $selector.off('.formvalidate');
@@ -523,6 +523,28 @@
         if (this._$form) {
             this._$form.off('.formvalidate');
             this._$form.find('.' + this._settings.defaultErrorClass).remove();
+            this._$form.find('.' + this._settings.errorClass).removeClass(this._settings.errorClass);
+
+            // remove event listeners
+            for (var key in this._inputs) {
+                var field = this._inputs[key];
+
+                if (field.type === 'checkbox' ||
+                    field.type === 'radio' ||
+                    field.type === 'select') {
+                    //console.log(field);
+                    var $selector = field.$el;
+                    if (field.groupName)
+                        $selector = this._$form.find('input[name="' + field.groupName + '"]');
+
+                    //remove all listeners
+                    $selector.off('.formvalidate').removeAttr('data-valid');;
+                }
+                else {
+                    //remove all listeners
+                    field.$el.off('.formvalidate').removeAttr('data-valid');
+                }
+            }
 
             return true;
         }

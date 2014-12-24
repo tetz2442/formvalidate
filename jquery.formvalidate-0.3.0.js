@@ -118,8 +118,8 @@
         this._$form.attr('novalidate', 'novalidate');
 
         //extend the filtering
-        if (typeof this._settings.extend !== 'undefined')
-            this._extend(this._settings.extend);
+        if (typeof this._settings.extend === 'object')
+            methods.extend(this._settings.extend);
 
         //filter down inputs
         if (this._settings.filter)

@@ -452,12 +452,23 @@
             //remove all listeners
             $selector.off('.formvalidate');
 
-            $selector.one('click.formvalidate change.formvalidate', function (e) {
+            $selector.one('change.formvalidate', function (e) {
                 field.$el.parents(self._settings.parentElement).removeClass(self._settings.errorClass);
                 $selector.removeClass(self._settings.errorClass);
 
-                if (self._settings.validationErrors && !field.hasErrorSpan)
-                    field.$el.next().remove();
+                if (self._settings.validationErrors && !field.hasErrorSpan) {
+                    if(field.type === 'checkbox' ||
+                        field.type === 'radio') {
+                        // check if it is wrapped in a label
+                        if(field.$el.next().is('label')) {
+                            $selector.last().next().next().remove();
+                        }
+                        else
+                            $selector.last().parent().next().remove();
+                    }
+                    else
+                        field.$el.next().remove();
+                }
             });
 
         }

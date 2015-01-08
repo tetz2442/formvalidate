@@ -17,6 +17,10 @@
     <div class="container">
         <form role="form">
             <div class="form-group">
+                <label for="PurchaseDate">Date</label>
+                <input class="form-control" data-format="MM/dd/yyyy" id="PurchaseDate" max="2015-01-07" min="2005-01-07" name="PurchaseDate" required="required" type="date">
+            </div>
+            <div class="form-group">
                 <label for="Custom1">Text</label>
                 <input class="form-control" type="text" id="Custom1" name="Custom1" required />
             </div>
@@ -95,7 +99,7 @@
     </div>
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script src="../jquery.formvalidate-0.3.0.js"></script>
+    <script src="../jquery.formvalidate-0.3.1.js"></script>
     <script>
         $("form").formvalidate();
 

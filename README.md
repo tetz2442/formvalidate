@@ -5,7 +5,7 @@ Jquery Form validate plugin
 
 ```
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-<script src="/path/to/jquery.formvalidate-0.3.1.js"></script>
+<script src="/path/to/jquery.formvalidate-0.3.2.js"></script>
 ```
 
 ###Usage

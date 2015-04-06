@@ -307,6 +307,8 @@
             var validated = true;
 
             console.log('validating', inputs[key]);
+            this._removeFieldError(inputs[key]);
+            this._removeTooltip(inputs[key]);
             // make sure input is not disabled
             if (!inputs[key].disabled && !inputs[key].$el.is(':disabled')) {
                 console.log('validate', inputs[key]);
@@ -337,10 +339,10 @@
                         var currentFilter = fltrs[inputFilters[i].key];
                         //console.log(inputFilters[i], currentFilter);
                         // make sure there is a value to test
-                        if (val.length > 0 && currentFilter) {
+                        if (currentFilter && (val.length > 0 || currentFilter.novalue)) {
                             var valid;
                             if (typeof currentFilter.regex === 'function')
-                                valid = currentFilter.regex(val, inputFilters[i].args);
+                                valid = currentFilter.regex.apply(inputs[key].$el, [val, inputFilters[i].args]);
                             else
                                 valid = currentFilter.regex.test(val);
 
@@ -455,20 +457,7 @@
             $selector.one('change.formvalidate', function (e) {
                 field.$el.parents(self._settings.parentElement).removeClass(self._settings.errorClass);
                 $selector.removeClass(self._settings.errorClass);
-
-                if (self._settings.validationErrors && !field.hasErrorSpan) {
-                    if(field.type === 'checkbox' ||
-                        field.type === 'radio') {
-                        // check if it is wrapped in a label
-                        if(field.$el.next().is('label')) {
-                            $selector.last().next().next().remove();
-                        }
-                        else
-                            $selector.last().parent().next().remove();
-                    }
-                    else
-                        field.$el.next().remove();
-                }
+                self._removeTooltip(field);
             });
 
         }
@@ -482,11 +471,41 @@
                     var $this = $(this);
                     $this.parents(self._settings.parentElement).removeClass(self._settings.errorClass);
                     $this.removeClass(self._settings.errorClass);
-
-                    if (self._settings.validationErrors && !field.hasErrorSpan)
-                        $this.next().remove();
+                    self._removeTooltip(field);
                 }
             });
+        }
+    };
+
+    FormValidate.prototype._removeTooltip = function(field) {
+        var self = this;
+
+        console.log('removeing field error', field);
+        if (self._settings.validationErrors && !field.hasErrorSpan) {
+            //just add click events to checkboxes, radio buttons, and selects
+            if (field.type === 'checkbox' ||
+                field.type === 'radio' ||
+                field.type === 'select') {
+                var $selector = field.$el;
+                if (field.groupName)
+                    $selector = this._$form.find('input[name="' + field.groupName + '"]');
+                if (field.type === 'checkbox' ||
+                    field.type === 'radio') {
+                    // check if it is wrapped in a label
+                    if (field.$el.next().is('label')) {
+                        $selector.last().next().next().remove();
+                    }
+                    else
+                        $selector.last().parent().next().remove();
+                }
+                else
+                    field.$el.next().remove();
+
+            }
+            //add keydown listeners to other inputs
+            else {
+                field.$el.next().remove();
+            }
         }
     };
 

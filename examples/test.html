@@ -46,6 +46,21 @@
             </div>
             <div class="form-group">
                 <label>
+                    <input type="checkbox" name="Custom20" required> Test checkbox
+                </label>
+            </div>
+            <div class="form-group">
+                <input id="Custom25" type="checkbox" name="Custom21" required data-validate-noerror="true">
+                <label for="Custom25">Test</label>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-holder">
+                    <input class="checkbox-input" id="Terms" type="checkbox" name="Terms" value="true" required data-validate-noerror="true" />
+                    <label for="Terms">You agree to our <a href="#">Terms &amp; Conditions</a> and <a href="#">Cancellation Policy</a>.</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>
                     <input type="radio" name="Custome7" value="1" required /> Option 1
                 </label>
                 <label>
@@ -98,8 +113,20 @@
         </form>
     </div>
 
+    <div class="container">
+        <form role="form">
+            <div class="form-group">
+                <input class="form-control" type="text" id="Custom28" name="Custom28" required />
+                <input class="form-control" type="number" id="Custom29" name="Custom29" value="-1" min="0"  max="1"/>
+            </div>
+            <div class="form-group">
+                <input class="btn" type="submit" value="Submit" />
+            </div>
+        </form>
+    </div>
+
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script src="../jquery.formvalidate-0.3.1.js"></script>
+    <script src="../jquery.formvalidate-0.3.3.js"></script>
     <script>
         $("form").formvalidate();
 

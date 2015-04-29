@@ -164,6 +164,8 @@
                         args: $el.attr('name')
                     });
                 }
+                else if ($el.is('checkbox'))
+                    field.type = 'checkbox';
                 else if ($el.attr('type') || $el.attr('data-validate-type')) {
                     console.log(field);
                     field.type = $el.attr('data-validate-type') || $el.attr('type');
@@ -320,7 +322,10 @@
                 // do required filter
                 for (var z = 0; z < inputFilters.length; z++) {
                     if (inputFilters[z].key === 'required') {
-                        validated = filters['required'].regex.test(val);
+                        if(inputs[key].type === 'checkbox')
+                            validated = inputs[key].$el.is(':checked');
+                        else
+                            validated = filters['required'].regex.test(val);
                         if (!validated) {
                             self._applyError(inputFilters[z], filters['required'], inputs[key] );
                             errorNumber++;
@@ -483,6 +488,8 @@
 
         console.log('removeing field error', field);
         if (self._settings.validationErrors && !field.hasErrorSpan) {
+            var $fieldError = field.$el.next();
+
             //just add click events to checkboxes, radio buttons, and selects
             if (field.type === 'checkbox' ||
                 field.type === 'radio' ||
@@ -494,19 +501,15 @@
                     field.type === 'radio') {
                     // check if it is wrapped in a label
                     if (field.$el.next().is('label')) {
-                        $selector.last().next().next().remove();
+                        $fieldError = $selector.last().next().next();
                     }
                     else
-                        $selector.last().parent().next().remove();
+                        $fieldError = $selector.last().parent().next();
                 }
-                else
-                    field.$el.next().remove();
+            }
 
-            }
-            //add keydown listeners to other inputs
-            else {
-                field.$el.next().remove();
-            }
+            if($fieldError.is('.' + this._settings.defaultErrorClass))
+                $fieldError.remove();
         }
     };
 
